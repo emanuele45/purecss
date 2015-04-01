@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @name      ElkArte Forum
+ * @name	  ElkArte Forum
  * @copyright ElkArte Forum contributors
  * @license   BSD http://opensource.org/licenses/BSD-3-Clause
  *
@@ -92,8 +92,12 @@ function template_list_boards($boards, $id)
 {
 	global $context, $settings, $txt, $scripturl;
 
+	$last_class = count($boards) % 2 ? 'pure-u-md-1' : 'pure-u-md-1-2';
+	$last = count($boards) - 1;
+	$count = 0;
+
 	echo '
-			<ul class="category_boards" id="', $id, '">';
+		<div class="pure-u-1" id="', $id, '">';
 
 	// Each board in each category's boards has:
 	// new (is it new?), id, name, description, moderators (see below), link_moderators (just a list.),
@@ -102,28 +106,29 @@ function template_list_boards($boards, $id)
 	foreach ($boards as $board)
 	{
 		echo '
-				<li class="board_row', (!empty($board['children'])) ? ' parent_board' : '', $board['is_redirect'] ? ' board_row_redirect' : '', '" id="board_', $board['id'], '">
-					<div class="board_info">
-						<a class="icon_anchor" href="', ($board['is_redirect'] || $context['user']['is_guest'] ? $board['href'] : $scripturl . '?action=unread;board=' . $board['id'] . '.0;children'), '">';
+			<div class="pure-u-1 ', $count === $last ? $last_class : 'pure-u-md-1-2', (!empty($board['children'])) ? ' parent_board' : '', $board['is_redirect'] ? ' board_row_redirect' : '', '" id="board_', $board['id'], '">
+				<div class="pricing-table pricing-table-free">
+					<div class="pricing-table-header pure-g">
+						<a class="pure-u-1-6 icon_anchor" href="', ($board['is_redirect'] || $context['user']['is_guest'] ? $board['href'] : $scripturl . '?action=unread;board=' . $board['id'] . '.0;children'), '">';
 
 		// If the board or children is new, show an indicator.
 		if ($board['new'] || $board['children_new'])
 			echo '
-							<span class="board_icon ', $board['new'] ? 'on_board' : 'on2_board', '" title="', $txt['new_posts'], '"></span>';
+							<i title="', $txt['new_posts'], '" class="fa ', $board['new'] ? 'fa-comment-o' : 'fa-comments-o', ' fa-3x"></i>';
 
 		// Is it a redirection board?
 		elseif ($board['is_redirect'])
 			echo '
-							<span class="board_icon redirect_board" title="*"></span>';
+							<i class="fa fa-external-link fa-3x"></i>';
 
 		// No new posts at all! The agony!!
 		else
 			echo '
-							<span class="board_icon off_board" title="', $txt['old_posts'], '"></span>';
+							<i title="', $txt['old_posts'], '" class="fa fa-folder-o fa-3x"></i>';
 
 		echo '
 						</a>
-						<h3 class="board_name">
+						<h3 class="pure-u-5-6 board_name">
 							<a href="', $board['href'], '" id="b', $board['id'], '">', $board['name'], '</a>';
 
 		// Has it outstanding posts for approval? @todo - Might change presentation here.
@@ -133,20 +138,22 @@ function template_list_boards($boards, $id)
 
 		echo '
 						</h3>
-						<p class="board_description">', $board['description'], '</p>';
+						<span class="pure-u-1 pricing-table-price">
+							<span>', $board['description'], '</span>
+						</span>
+					</div>
+					<ul class="pricing-table-list">';
 
 		// Show the "Moderators: ". Each has name, href, link, and id. (but we're gonna use link_moderators.)
 		if (!empty($board['moderators']))
 			echo '
-						<p class="moderators">', count($board['moderators']) === 1 ? $txt['moderator'] : $txt['moderators'], ': ', implode(', ', $board['link_moderators']), '</p>';
+						<li class="moderators">', count($board['moderators']) === 1 ? $txt['moderator'] : $txt['moderators'], ': ', implode(', ', $board['link_moderators']), '</li>';
 
 		// Show some basic information about the number of posts, etc.
 		echo '
-					</div>
-					<div class="board_latest">
-						<p class="board_stats">
-							', comma_format($board['posts']), ' ', $board['is_redirect'] ? $txt['redirects'] : $txt['posts'], $board['is_redirect'] ? '' : '<br /> ' . comma_format($board['topics']) . ' ' . $txt['board_topics'], '
-						</p>';
+						<li class="board_stats">
+							', comma_format($board['posts']), ' ', $board['is_redirect'] ? $txt['redirects'] : $txt['posts'], $board['is_redirect'] ? '' : ' / ' . comma_format($board['topics']) . ' ' . $txt['board_topics'], '
+						</li>';
 
 		// @todo - Last post message still needs some work. Probably split the language string into three chunks.
 		// Example:
@@ -155,19 +162,20 @@ function template_list_boards($boards, $id)
 		if (!empty($board['last_post']['id']))
 		{
 			echo '
-						<p class="board_lastpost">';
+						<li class="board_lastpost">';
 
 			if (!empty($settings['avatars_on_indexes']))
 				echo '
 							<span class="board_avatar"><a href="', $board['last_post']['member']['href'], '"><img class="avatar" src="', $board['last_post']['member']['avatar']['href'], '" alt="" /></a></span>';
 			echo '
 							', $board['last_post']['last_post_message'], '
-						</p>';
+						</li>';
 		}
 
 		echo '
-					</div>
-				</li>';
+					</ul>
+				</div>
+			</div>';
 
 		// Show the "Sub-boards: ". (there's a link_children but we're going to bold the new ones...)
 		if (!empty($board['children']))
@@ -206,10 +214,11 @@ function template_list_boards($boards, $id)
 					</ul>
 				</li>';
 		}
+		$count++;
 	}
 
 	echo '
-			</ul>';
+			</div>';
 }
 
 /**

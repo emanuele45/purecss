@@ -42,24 +42,32 @@ function template_boards_list()
 
 		// @todo - Invent nifty class name for boardindex header bars.
 		echo '
-		<div class="forum_category" id="category_', $category['id'], '">
-			<h2 class="category_header">';
+		<div class="l-content categories" id="category_', $category['id'], '">
+			<div class="pricing-tables pure-g">
+				<h2 class="category_header">';
 
 		// If this category even can collapse, show a link to collapse it.
 		if ($category['can_collapse'])
-			echo '
-				<a class="collapse" href="', $category['collapse_href'], '" title="', $category['is_collapsed'] ? $txt['show'] : $txt['hide'], '">', $category['collapse_image'], '</a>';
+		{
+			if ($category['is_collapsed'])
+				echo '
+					<a class="collapse" href="', $category['collapse_href'], '" title="', $txt['show'], '"><i class="fa fa-plus-square-o fa-x2"></i></a>';
+			else
+				echo '
+					<a class="collapse" href="', $category['collapse_href'], '" title="', $txt['hide'], '"><i class="fa fa-minus-square-o fa-x2"></i></a>';
+		}
 
 		// The "category link" is only a link for logged in members. Guests just get the name.
 		echo '
-				', $category['link'], '
-			</h2>';
+					', $category['link'], '
+				</h2>';
 
 		// Assuming the category hasn't been collapsed...
 		if (!$category['is_collapsed'])
 			template_list_boards($category['boards'], 'category_' . $category['id'] . '_boards');
 
 		echo '
+			</div>
 		</div>';
 	}
 }
@@ -90,7 +98,7 @@ function template_boardindex_outer_below()
 	// @todo - Just <div> for the parent, <p>'s for the icon stuffz, and the buttonlist <ul> for "Mark read".
 	// Sort the floats in the CSS file, as other tricks will be needed as well (media queries, for instance).
 	echo '
-		<div id="posting_icons">';
+		<div class="pricing-table" id="posting_icons">';
 
 	// Show the mark all as read button?
 	if ($settings['show_mark_read'] && !$context['user']['is_guest'] && !empty($context['categories']))
@@ -99,11 +107,11 @@ function template_boardindex_outer_below()
 
 	if ($context['user']['is_logged'])
 		echo '
-			<p class="board_key new_some_board" title="', $txt['new_posts'], '">', $txt['new_posts'], '</p>';
+			<p class="board_key new_some_board" title="', $txt['new_posts'], '"><i class="fa fa-comments"></i>', $txt['new_posts'], '</p>';
 
 	echo '
-			<p class="board_key new_none_board" title="', $txt['old_posts'], '">', $txt['old_posts'], '</p>
-			<p class="board_key new_redirect_board" title="', $txt['redirect_board'], '">', $txt['redirect_board'], '</p>
+			<p class="board_key new_none_board" title="', $txt['old_posts'], '"><i class="fa fa-folder"></i>', $txt['old_posts'], '</p>
+			<p class="board_key new_redirect_board" title="', $txt['redirect_board'], '"><i class="fa fa-external-link"></i>', $txt['redirect_board'], '</p>
 		</div>';
 
 	if (!empty($context['info_center_callbacks']))
@@ -121,10 +129,7 @@ function template_info_center()
 	echo '
 	<div id="info_center" class="forum_category">
 		<h2 class="category_header">
-			<span id="category_toggle">&nbsp;
-				<span id="upshrink_ic" class="', empty($context['minmax_preferences']['info']) ? 'collapse' : 'expand', '" style="display: none;" title="', $txt['hide'], '"></span>
-			</span>
-			<a href="#" id="upshrink_link">', sprintf($txt['info_center_title'], $context['forum_name_html_safe']), '</a>
+			', sprintf($txt['info_center_title'], $context['forum_name_html_safe']), '
 		</h2>
 		<ul id="upshrinkHeaderIC" class="category_boards"', empty($context['minmax_preferences']['info']) ? '' : ' style="display: none;"', '>';
 
@@ -133,45 +138,6 @@ function template_info_center()
 	echo '
 		</ul>
 	</div>';
-
-	// Info center collapse object.
-	echo '
-	<script><!-- // --><![CDATA[
-		var oInfoCenterToggle = new elk_Toggle({
-			bToggleEnabled: true,
-			bCurrentlyCollapsed: ', empty($context['minmax_preferences']['info']) ? 'false' : 'true', ',
-			aSwappableContainers: [
-				\'upshrinkHeaderIC\'
-			],
-			aSwapClasses: [
-				{
-					sId: \'upshrink_ic\',
-					classExpanded: \'collapse\',
-					titleExpanded: ', JavaScriptEscape($txt['hide']), ',
-					classCollapsed: \'expand\',
-					titleCollapsed: ', JavaScriptEscape($txt['show']), '
-				}
-			],
-			aSwapLinks: [
-				{
-					sId: \'upshrink_link\',
-					msgExpanded: ', JavaScriptEscape(sprintf($txt['info_center_title'], $context['forum_name_html_safe'])), ',
-					msgCollapsed: ', JavaScriptEscape(sprintf($txt['info_center_title'], $context['forum_name_html_safe'])), '
-				}
-			],
-			oThemeOptions: {
-				bUseThemeSettings: ', $context['user']['is_guest'] ? 'false' : 'true', ',
-				sOptionName: \'minmax_preferences\',
-				sSessionId: elk_session_id,
-				sSessionVar: elk_session_var,
-				sAdditionalVars: \';minmax_key=info\'
-			},
-			oCookieOptions: {
-				bUseCookie: ', $context['user']['is_guest'] ? 'true' : 'false', ',
-				sCookieName: \'upshrinkIC\'
-			}
-		});
-	// ]]></script>';
 }
 
 /**
