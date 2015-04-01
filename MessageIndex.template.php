@@ -31,14 +31,16 @@ function template_display_child_boards_above()
 	global $context, $txt;
 
 	echo '
-	<div id="board_', $context['current_board'], '_childboards" class="forum_category">
-		<h2 class="category_header">
-			', $txt['parent_boards'], '
-		</h2>';
+	<div id="board_', $context['current_board'], '_childboards" class="l-content categories">
+		<div class="pricing-tables pure-g">
+			<h2 class="category_header">
+				', $txt['parent_boards'], '
+			</h2>';
 
 	template_list_boards($context['boards'], 'board_' . $context['current_board'] . '_children');
 
 	echo '
+		</div>
 	</div>';
 }
 
@@ -58,23 +60,25 @@ function template_topic_listing_above()
 	template_pagesection('normal_buttons', 'right');
 
 	echo '
-		<div id="description_board">
-			<h2 class="category_header">', $context['name'], '</h2>
-			<div class="generalinfo">';
+		<div id="description_board" class="pricing-table-free pricing-table">
+			<div class="pricing-table-header">
+				<h2 class="category_header">', $context['name'], '</h2>
+			</div>
+			<ul class="pricing-table-list">';
 
 	// Show the board description
 	if (!empty($context['description']))
 		echo '
-				<div id="boarddescription">
+				<li>
 					', $context['description'], '
-				</div>';
+				</li>';
 
 	if (!empty($context['moderators']))
 		echo '
-				<div class="moderators">', count($context['moderators']) === 1 ? $txt['moderator'] : $txt['moderators'], ': ', implode(', ', $context['link_moderators']), '.</div>';
+				<li>', count($context['moderators']) === 1 ? $txt['moderator'] : $txt['moderators'], ': ', implode(', ', $context['link_moderators']), '.</li>';
 
 	echo '
-				<div id="whoisviewing">';
+				<li>';
 
 	// If we are showing who is viewing this topic, build it out
 	if (!empty($settings['display_who_viewing']))
@@ -88,35 +92,45 @@ function template_topic_listing_above()
 	}
 
 	// Sort topics mumbo-jumbo
+	$current_header = $context['topics_headers'][$context['sort_by']];
+
 	echo '
-					<ul id="sort_by" class="topic_sorting">';
+				<div class="pure-u-1 custom-menutoggle">
+					<div class="pure-g">
+						<a class="pure-u-1-2" href="', $current_header['url'], '">', $txt[$context['sort_by']], ' ', $current_header['sort_dir_img'], '</a>
+						<!-- Menu toggle -->
+						<a href="#menu" id="menuLink2" class="pure-u-1-2 menu-link-toggle" data-menu="sort_list" data-layout="menuLink2">
+							<i class="fa fa-bars fa-2x"></i>
+						</a>
+					</div>
+				</div>
+				<div id="sort_list" class="pure-u-1">
+					<div class="pure-g">';
 
 	if (!empty($context['can_quick_mod']) && $options['display_quick_mod'] == 1)
 		echo '
-						<li class="listlevel1 quickmod_select_all">
+						<div class="listlevel1 quickmod_select_all">
 							<input type="checkbox" onclick="invertAll(this, document.getElementById(\'quickModForm\'), \'topics[]\');" class="input_check" />
-						</li>';
+						</div>';
 
-	$current_header = $context['topics_headers'][$context['sort_by']];
-	echo '
-						<li class="listlevel1 topic_sorting_row">
-							<a class="sort topicicon img_sort', $context['sort_direction'], '" href="', $current_header['url'], '" title="', $context['sort_title'], '"></a>
-						</li>';
-
-	echo '
-						<li class="listlevel1 topic_sorting_row">', $txt['sort_by'], ': <a href="', $current_header['url'], '">', $txt[$context['sort_by']], '</a>
-							<ul class="menulevel2" id="sortby">';
-
+	$pure_class = 'pure-u-md-1-' . count($context['topics_headers']);
 	foreach ($context['topics_headers'] as $key => $value)
 		echo '
-								<li class="listlevel2 sort_by_item" id="sort_by_item_', $key, '"><a href="', $value['url'], '" class="linklevel2">', $txt[$key], ' ', $value['sort_dir_img'], '</a></li>';
+						<div class="pure-u-1 ', $pure_class,'  sort_by_item', $context['sort_by'] === $key ? ' pure-menu-selected' : '', '" id="sort_by_item_', $key, '"><a href="', $value['url'], '" class="pure-menu-link">', $txt[$key], ' ', $value['sort_dir_img'], '</a></div>';
 
 	echo '
-							</ul>
-						</li>
-					</ul>
+					</div>
 				</div>
-			</div>
+				</li>';
+
+
+		// If this person can approve items and we have some awaiting approval tell them.
+		if (!empty($context['unapproved_posts_message']))
+			echo '
+		<li class="warningbox">', $context['unapproved_posts_message'], '</li>';
+
+	echo '
+			</ul>
 		</div>';
 }
 
@@ -137,27 +151,20 @@ function template_topic_listing()
 			echo '
 	<form action="', $scripturl, '?action=quickmod;board=', $context['current_board'], '.', $context['start'], '" method="post" accept-charset="UTF-8" class="clear" name="quickModForm" id="quickModForm">';
 
-		// If this person can approve items and we have some awaiting approval tell them.
-		if (!empty($context['unapproved_posts_message']))
-			echo '
-		<div class="warningbox">', $context['unapproved_posts_message'], '</div>';
-
 		echo '
-		<ul class="topic_listing" id="messageindex">';
+		<div class="posts pricing-table">';
 
 		// No topics.... just say, "sorry bub".
 		if (empty($context['topics']))
 			echo '
-			<li class="basic_row">
-				<div class="topic_info">
-					<div class="topic_name">
-						<h4>
-							<strong>', $txt['topic_alert_none'], '</strong>
-						</h4>
-					</div>
+			<section class="post">
+				<div class="post-description">
+					<h4>', $txt['topic_alert_none'], '</h4>
 				</div>
-			</li>';
+			</section>';
 
+		$pinned = false;
+		$header = false;
 		foreach ($context['topics'] as $topic)
 		{
 			// Is this topic pending approval, or does it have any posts pending approval?
@@ -176,10 +183,23 @@ function template_topic_listing()
 			else
 				$color_class = 'basic_row';
 
+			if ($topic['is_sticky'] && !$pinned)
+			{
+				echo '
+			<h2 class="content-subhead">', $txt['sticky_topic'], '</h2>';
+				$pinned = true;
+			}
+			elseif (!$topic['is_sticky'] && !$header)
+			{
+				$header = true;
+				echo '
+			<h2 class="content-subhead">', $txt['posts'], '</h2>';
+			}
+
 			echo '
-			<li class="', $color_class, '">
-				<div class="topic_info">
-					<p class="topic_icons', isset($message_icon_sprite[$topic['first_post']['icon']]) ? ' topicicon img_' . $topic['first_post']['icon'] : '', '">';
+			 <section class="post ', $color_class, '">
+				<header class="post-header">
+					<p class="post-avatar topic_icons', isset($message_icon_sprite[$topic['first_post']['icon']]) ? ' topicicon img_' . $topic['first_post']['icon'] : '', '">';
 
 			if (!isset($message_icon_sprite[$topic['first_post']['icon']]))
 				echo '
@@ -188,49 +208,50 @@ function template_topic_listing()
 			echo '
 						', $topic['is_posted_in'] ? '<span class="fred topicicon img_profile"></span>' : '', '
 					</p>
-					<div class="topic_name" ', (!empty($topic['quick_mod']['modify']) ? 'id="topic_' . $topic['first_post']['id'] . '"  ondblclick="oQuickModifyTopic.modify_topic(\'' . $topic['id'] . '\', \'' . $topic['first_post']['id'] . '\');"' : ''), '>
-						<h4>';
+					<div class="topic_name" ', (!empty($topic['quick_mod']['modify']) ? 'id="topic_' . $topic['first_post']['id'] . '"  ondblclick="oQuickModifyTopic.modify_topic(\'' . $topic['id'] . '\', \'' . $topic['first_post']['id'] . '\');"' : ''), '>';
 
 			// Is this topic new? (assuming they are logged in!)
 			if ($topic['new'] && $context['user']['is_logged'])
 				echo '
-							<a class="new_posts" href="', $topic['new_href'], '" id="newicon' . $topic['first_post']['id'] . '">' . $txt['new'] . '</a>';
+						<a class="new_posts" href="', $topic['new_href'], '" id="newicon' . $topic['first_post']['id'] . '">' . $txt['new'] . '</a>';
 
 			// Is this an unapproved topic and they can approve it?
 			if ($context['can_approve_posts'] && !$topic['approved'])
 				echo '<span class="require_approval">' . $txt['awaiting_approval'] . '</span>';
 
 			echo '
-							', $topic['is_sticky'] ? '<strong>' : '', '<span class="preview" title="', $topic['default_preview'], '"><span id="msg_' . $topic['first_post']['id'] . '">', $topic['first_post']['link'], '</span></span>', $topic['is_sticky'] ? '</strong>' : '', '
-						</h4>
+						<h2 class="post-title"><span id="msg_' . $topic['first_post']['id'] . '">', $topic['first_post']['link'], '</span></h2>
 					</div>
-					<div class="topic_starter">
-						', sprintf($txt['topic_started_by'], $topic['first_post']['member']['link']), !empty($topic['pages']) ? '
+
+					<p class="post-meta">
+						<div class="topic_starter">
+							', sprintf($txt['topic_started_by'], $topic['first_post']['member']['link']), '
+							<span class="post-category post-category-design">', $topic['replies'], ' ', $txt['replies'], '</span>
+							<span class="post-category post-category-pure">', $topic['views'], ' ', $txt['views'], '</span>', !empty($modSettings['likes_enabled']) ? '
+							<span class="post-category post-category-js">' . $topic['likes'] . ' ' . $txt['likes'] . '</span>' : '', '
+						</div>
+					</p>
+				</header>
+
+				<div class="post-description">
+					<p>', $topic['full_body'], '</p>
+					', !empty($topic['pages']) ? '
 						<ul class="small_pagelinks" id="pages' . $topic['first_post']['id'] . '" role="menubar">' . $topic['pages'] . '</ul>' : '', '
-					</div>
 				</div>
 				<div class="topic_latest">
-					<p class="topic_stats">
-					', $topic['replies'], ' ', $txt['replies'], '<br />
-					', $topic['views'], ' ', $txt['views'];
-
-			// Show likes?
-			if (!empty($modSettings['likes_enabled']))
-				echo '<br />
-					', $topic['likes'], ' ', $txt['likes'];
-
-			echo '
-					</p>
 					<p class="topic_lastpost">';
-
-			if (!empty($settings['avatars_on_indexes']))
-				echo '
-						<span class="board_avatar"><a href="', $topic['last_post']['member']['href'], '"><img class="avatar" src="', $topic['last_post']['member']['avatar']['href'], '" alt="" /></a></span>';
 
 			echo '
 						<a class="topicicon img_last_post', '" href="', $topic['last_post']['href'], '" title="', $txt['last_post'], '"></a>
-						', $topic['last_post']['html_time'], '<br />
-						', $txt['by'], ' ', $topic['last_post']['member']['link'], '
+						', $topic['last_post']['html_time'];
+
+			if (!empty($topic['last_post']['member']['avatar']))
+				echo ' ' . $txt['by'], '
+						<span class="board_avatar">
+							<a href="', $topic['last_post']['member']['href'], '">
+								<img class="post-avatar avatar" src="', $topic['last_post']['member']['avatar']['href'], '" alt="" />
+							</a>
+						</span>
 					</p>
 				</div>';
 
@@ -267,11 +288,11 @@ function template_topic_listing()
 			}
 
 			echo '
-			</li>';
+			</section>';
 		}
 
 		echo '
-		</ul>';
+		</div>';
 
 		if (!empty($context['can_quick_mod']) && $options['display_quick_mod'] == 1 && !empty($context['topics']))
 		{
